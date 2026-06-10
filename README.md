@@ -54,6 +54,7 @@ sequenceDiagram
     participant Zsh as Terminal Shell Hook
     participant Agent1 as Outgoing AI Agent (e.g., Claude)
     participant Unimem as Unimem Memory Layer
+    participant Codebase as Project Codebase
     participant Agent2 as Incoming AI Agent (e.g., Gemini)
 
     Developer->>Zsh: mkdir project && cd project
@@ -62,17 +63,17 @@ sequenceDiagram
     Unimem-->>Developer: Auto-creates .cursorrules & .unimem/
 
     Developer->>Agent1: Start building Habit Tracker
-    Agent1->>Unimem: unimem run -- npm run build (Logs events)
-    Agent1->>Unimem: Edit state.json (Roadmap progress)
+    Agent1->>Codebase: Edits/saves files normally
+    Unimem->>Unimem: Watcher detects file saves → record_event() → rebuilds state.json + memory.md in real-time
+
     Developer->>Agent1: Terminate Session (Ctrl+C / Out of Tokens)
-    
     Note over Zsh: precmd hook fires
-    Zsh->>Unimem: unimem summary (Auto-compiles memory.md)
+    Zsh->>Unimem: unimem summary (Background)
 
     Developer->>Agent2: Start new session & type "continue"
-    Agent2->>Unimem: Reads .unimem/memory.md
-    Unimem-->>Agent2: Loads goal, current task, & file list
-    Agent2-->>Developer: Resumes coding right where Agent 1 stopped!
+    Agent2->>Unimem: Reads .clauderules → reads state.json + memory.md
+    Unimem-->>Agent2: Loads goal, current task & file list
+    Agent2-->>Developer: Resumes coding right where Agent1 stopped
 ```
 
 ---
