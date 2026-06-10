@@ -206,8 +206,44 @@ When you finish or pause work:
         except Exception as e:
             logger.debug(f"Failed to write agent rule files: {e}")
 
+    def rebuild_state_from_events(self, summarizer_type: str = "local") -> ProjectState:
+        """Rebuild state from recorded events directly within the manager to avoid circular imports."""
+        from unimem.summarizer.local import LocalSummarizer
+        
+        # Instantiate summarizer
+        if summarizer_type.lower() == "local":
+            summarizer = LocalSummarizer()
+        else:
+            summarizer = LocalSummarizer()
+            
+        # Read and sort all events chronologically
+        events_dir = get_events_dir(self.project_root)
+        events = []
+        
+        if events_dir.exists():
+            event_files = list(events_dir.glob("*.json"))
+            event_files.sort(key=lambda p: p.name)
+            
+            for f in event_files:
+                try:
+                    data = JsonStore.load(f)
+                    events.append(Event(**data))
+                except Exception as e:
+                    logger.debug(f"Failed to load event file {f.name}: {e}")
+                    
+        # Load current state as the baseline
+        current_state = self.load_state()
+        
+        # Process events through the summarizer
+        updated_state = summarizer.summarize(current_state, events)
+        
+        # Save the updated state
+        self.save_state(updated_state)
+        
+        return updated_state
+
     def record_event(self, event: Event, auto_snapshot: bool = True) -> Path:
-        """Record an event to the events folder."""
+        """Record an event to the events folder and continuously update state.json and memory.md."""
         events_dir = get_events_dir(self.project_root)
         events_dir.mkdir(parents=True, exist_ok=True)
         
@@ -218,23 +254,16 @@ When you finish or pause work:
         JsonStore.save(event_file, event.model_dump())
         logger.debug(f"Event recorded: {event_file.name}")
         
-        # Update state tool history if not already present
+        # Rebuild state from all events to keep it continuously updated
         try:
-            state = self.load_state()
-            if event.tool and event.tool not in state.tool_history:
-                state.tool_history.append(event.tool)
-                
-            # If files changed, update important files list if they look important
-            for f in event.files_changed:
-                if f not in state.important_files and not f.startswith(".unimem") and not f.startswith(".git"):
-                    state.important_files.append(f)
-                    
-            self.save_state(state)
+            state = self.rebuild_state_from_events()
             
             if auto_snapshot:
                 create_snapshot(self.project_root, state)
         except FileNotFoundError:
             pass # Not initialized yet
+        except Exception as e:
+            logger.debug(f"Failed to auto-rebuild state on event record: {e}")
             
         return event_file
 
