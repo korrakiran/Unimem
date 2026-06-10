@@ -7,7 +7,7 @@
 [![Tests](https://img.shields.io/badge/Tests-41%20passing-brightgreen.svg)](https://github.com/korrakiran/collector)
 [![Version](https://img.shields.io/badge/Version-0.4.0-blue.svg)](https://github.com/korrakiran/collector/releases)
 
-**Unimem** is a universal, persistent project memory and handoff layer designed for AI coding agents (like Claude Code, Gemini CLI, Cursor, Aider, Windsurf, Cline, and GitHub Copilot). It helps you seamlessly switch between different AI coding tools mid-project without losing context, progress, or architectural decisions.
+**Unimem** is a universal, persistent project memory and handoff layer designed for AI coding agents (like Claude Code, Gemini CLI, Cursor, Aider, Windsurf, Cline, GitHub Copilot, and Antigravity). It helps you seamlessly switch between different AI coding tools mid-project without losing context, progress, or architectural decisions.
 
 ---
 
@@ -24,14 +24,15 @@ When building apps with AI agents, you often hit limits:
 
 ## Key Features
 
-* **Zero-Command Handoff**: You don't need to manually initialize, watch, or compile. Global shell hooks copy rule files and initialize memory automatically on `cd`.
+* **Zero-Command Handoff**: You don't need to manually initialize, watch, or compile. Global shell hooks copy rule files and auto-bootstrap Unimem on first `cd` into a repo under your home directory.
 * **Double-Layer Memory & Bi-directional Sync**:
+  * `AGENTS.md`: A repo-level startup file that tells compliant agents to read Unimem memory first, then update task/state before stopping.
   * `.unimem/state.json`: A structured, queryable schema of the roadmap, completed features, and file paths.
   * `.unimem/memory.md`: An auto-generated, human-readable project context file read by AI agents at startup. Edits made by the AI directly to `.unimem/memory.md` are automatically parsed and reconciled back into `state.json`.
 * **Real-Time Updates**: `state.json` and `memory.md` are rebuilt on every file save event — not just on manual `unimem summary` runs. Context is never stale.
 * **Crash & Interrupt Protection**: Signal handlers (`SIGTERM`/`SIGINT`) and orphan session recovery (sessions with no `end_time` older than 10 minutes) ensure context is saved even if an agent crashes mid-session.
 * **Goal/Task Progression Loop**: Tracks `current_goal` → `current_task` → `next_task`. When a task is completed, run `unimem task done --next "..."` to promote the task chain forward.
-* **Universal Agent Compatibility**: Writes rule files for 5 agents automatically — `.cursorrules` (Cursor), `.clauderules` (Claude Code), `.windsurfrules` (Windsurf), `.clinerules` (Cline), and `.github/copilot-instructions.md` (GitHub Copilot).
+* **Universal Agent Compatibility**: Writes rule files for multiple agents automatically — `.cursorrules` (Cursor), `.clauderules` (Claude Code), `.windsurfrules` (Windsurf), `.clinerules` (Cline), `.antigravityrules` (Antigravity), and `.github/copilot-instructions.md` (GitHub Copilot).
 * **41 Tests, 100% Local**: No external API calls, no network requests, no cloud storage. 2,500+ lines of pure Python running entirely on your machine.
 
 ---
@@ -131,7 +132,7 @@ Unimem provides 8 CLI commands:
 
 ### `unimem init`
 Initializes a new Unimem memory repository in the current directory.
-* *Auto-run in the background by the shell hook when entering a new folder.*
+* *Auto-run in the background by the shell hook when entering a new repo under your home directory.*
 
 ### `unimem status`
 Displays the active project root, memory initialization status, and current task focus.
@@ -151,6 +152,11 @@ Displays the active project root, memory initialization status, and current task
 ### `unimem summary`
 Compiles all recorded event logs (saves, git commits, terminal runs) and reconciles manual modifications inside `.unimem/state.json` to regenerate `.unimem/memory.md`.
 * *Auto-run in the background by the shell hook after every command completes.*
+
+### `AGENTS.md`
+Repo-level startup instructions for compliant AI tools.
+* Tells the next agent to read `.unimem/state.json` first and `.unimem/memory.md` second.
+* Tells the next agent to update tasks and run `unimem summary` before stopping.
 
 ### `unimem task done`
 Marks the current task as complete and promotes `next_task` → `current_task`.
@@ -230,7 +236,7 @@ rm -f ~/.cursorrules ~/.clauderules ~/.windsurfrules ~/.clinerules
 ### Remove Project Memory from a Specific Project
 ```bash
 cd your-project
-rm -rf .unimem .cursorrules .clauderules .windsurfrules .clinerules .github/copilot-instructions.md
+rm -rf .unimem AGENTS.md .cursorrules .clauderules .windsurfrules .clinerules .antigravityrules .github/copilot-instructions.md
 ```
 
 ### Remove All Project Memory Globally
