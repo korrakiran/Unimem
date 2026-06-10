@@ -24,7 +24,8 @@ pip-log.txt
 pip-delete-this-directory.txt
 metadata
 target
-.unimem/
+.unimem/*
+!.unimem/memory.md
 
 # Unit test / coverage reports
 htmlcov/

@@ -23,11 +23,11 @@ When building apps with AI agents, you often hit limits:
 ## Key Features
 
 * **Zero-Command Handoff**: You don't need to manually initialize, watch, or compile. Global shell hooks copy rule files and initialize memory automatically.
-* **Double-Layer Memory**:
+* **Double-Layer Memory & Bi-directional Sync**:
   * `.unimem/state.json`: A structured, queryable schema of the roadmap, completed features, and file paths.
-  * `.unimem/memory.md`: An auto-generated, human-readable project context file read by AI agents at startup.
+  * `.unimem/memory.md`: An auto-generated, human-readable project context file read by AI agents at startup. Edits made by the AI directly to `.unimem/memory.md` are automatically parsed and reconciled back into `state.json`.
 * **Abrupt Crash Protection**: The Zsh shell hook automatically triggers `unimem summary` in the background every time a command completes. If an agent crashes or is interrupted (`Ctrl+C`), your project memory is saved instantly.
-* **Universal Agent Compatibility**: Works with any agent that respects `.cursorrules` or `.clauderules`.
+* **Universal Agent Compatibility**: Works with any agent that respects `.cursorrules`, `.clauderules`, `.windsurfrules`, `.clinerules`, or `.github/copilot-instructions.md`.
 
 ---
 

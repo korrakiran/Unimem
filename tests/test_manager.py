@@ -123,3 +123,70 @@ def test_manager_session_lifecycle(initialized_unimem):
     assert "modify code" in ended_session.prompts
     assert "code modified successfully" in ended_session.summaries
     assert "app.py" in ended_session.files_changed
+
+def test_manager_reconcile_from_memory_md(initialized_unimem):
+    """Verify that state is reconciled from memory.md when memory.md is newer."""
+    manager = MemoryManager(initialized_unimem)
+    
+    # 1. Modify memory.md manually
+    memory_file = get_memory_md(initialized_unimem)
+    state_file = get_state_file(initialized_unimem)
+    
+    # Ensure memory_file has a later mtime than state_file
+    new_mtime = state_file.stat().st_mtime + 5
+    
+    md_content = """# Unimem Project Memory: CustomProj
+    
+This is a custom reconciled description.
+
+---
+
+## 🎯 Current Focus
+* **Current Goal**: Reconcile memory files
+* **Current Task**: Write unit tests for reconciliation
+* **Next Task**: Clean up code
+
+## 🛠️ Features
+### In Progress
+- Feature A
+- Feature B
+
+### Completed
+- Feature C
+
+## 🏛️ Architecture & Decisions
+### Architecture Notes
+- Microservices
+
+### Recent Decisions
+- Decided to use gRPC (2026-06-10)
+
+## 🔍 Context details
+### Important Files
+- handler.go
+- main.go
+
+### Blocked By
+- Port configuration
+
+### Tools Used
+- pytest
+"""
+    memory_file.write_text(md_content, encoding="utf-8")
+    os.utime(memory_file, (new_mtime, new_mtime))
+    
+    # 2. Load state - this should trigger reconciliation
+    state = manager.load_state()
+    
+    assert state.description == "This is a custom reconciled description."
+    assert state.current_goal == "Reconcile memory files"
+    assert state.current_task == "Write unit tests for reconciliation"
+    assert state.next_task == "Clean up code"
+    assert "Feature A" in state.in_progress_features
+    assert "Feature B" in state.in_progress_features
+    assert "Feature C" in state.completed_features
+    assert "Microservices" in state.architecture
+    assert "Decided to use gRPC (2026-06-10)" in state.recent_decisions
+    assert "handler.go" in state.important_files
+    assert "Port configuration" in state.blocked_by
+    assert "pytest" in state.tool_history

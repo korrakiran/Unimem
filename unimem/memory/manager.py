@@ -1,6 +1,7 @@
 """MemoryManager orchestrates all reading/writing of states, events, and sessions."""
 
 import os
+import re
 from pathlib import Path
 from typing import List, Optional
 import uuid
@@ -72,6 +73,81 @@ class MemoryManager:
         self.record_event(init_event, auto_snapshot=False)
         logger.info("[green]Successfully initialized Unimem![/green]")
 
+    def reconcile_from_memory_md(self, state: ProjectState, memory_file: Path) -> None:
+        """Parse memory.md and update ProjectState in-place with its values."""
+        try:
+            content = FileStore.read(memory_file)
+            
+            # Parse description
+            desc_match = re.search(r"# Unimem Project Memory:[^\n]*\n+(.*?)\n+---", content, re.DOTALL)
+            if desc_match:
+                desc = desc_match.group(1).strip()
+                if desc and desc != "No description provided.":
+                    state.description = desc
+                    
+            # Parse Current Goal, Current Task, Next Task
+            goal_match = re.search(r"\*\s*\*+Current Goal\*+:\s*(.*)", content, re.IGNORECASE)
+            if goal_match:
+                val = goal_match.group(1).strip()
+                state.current_goal = "" if val.lower() == "not set" else val
+                
+            task_match = re.search(r"\*\s*\*+Current Task\*+:\s*(.*)", content, re.IGNORECASE)
+            if task_match:
+                val = task_match.group(1).strip()
+                state.current_task = "" if val.lower() == "not set" else val
+                
+            next_match = re.search(r"\*\s*\*+Next Task\*+:\s*(.*)", content, re.IGNORECASE)
+            if next_match:
+                val = next_match.group(1).strip()
+                state.next_task = "" if val.lower() == "not set" else val
+
+            # Helper to extract list items under a header
+            def extract_list_items(section_title: str) -> List[str]:
+                pattern = rf"(?:^|\n)#+\s*{re.escape(section_title)}[^\n]*\n(.*?)(?=\n#+|$)"
+                match = re.search(pattern, content, re.DOTALL | re.IGNORECASE)
+                if not match:
+                    return []
+                section_text = match.group(1)
+                items = []
+                for line in section_text.strip().split("\n"):
+                    line = line.strip()
+                    if line.startswith("-") or line.startswith("*"):
+                        val = line.lstrip("-* ").strip()
+                        if val and val.lower() != "none":
+                            items.append(val)
+                return items
+
+            in_progress = extract_list_items("In Progress")
+            if in_progress:
+                state.in_progress_features = in_progress
+                
+            completed = extract_list_items("Completed")
+            if completed:
+                state.completed_features = completed
+                
+            architecture = extract_list_items("Architecture Notes")
+            if architecture:
+                state.architecture = architecture
+                
+            decisions = extract_list_items("Recent Decisions")
+            if decisions:
+                state.recent_decisions = decisions
+                
+            important_files = extract_list_items("Important Files")
+            if important_files:
+                state.important_files = important_files
+                
+            blocked_by = extract_list_items("Blocked By")
+            if blocked_by:
+                state.blocked_by = blocked_by
+                
+            tool_history = extract_list_items("Tools Used")
+            if tool_history:
+                state.tool_history = tool_history
+                
+        except Exception as e:
+            logger.debug(f"Failed to reconcile state from memory.md: {e}")
+
     def load_state(self) -> ProjectState:
         """Load project state, applying migrations if necessary."""
         state_file = get_state_file(self.project_root)
@@ -81,6 +157,12 @@ class MemoryManager:
         data = JsonStore.load(state_file)
         migrated_data = migrate_state(data)
         state = ProjectState(**migrated_data)
+        
+        # Reconcile from memory.md if it exists and is newer than state.json
+        memory_file = get_memory_md(self.project_root)
+        if memory_file.exists() and memory_file.stat().st_mtime > state_file.stat().st_mtime:
+            self.reconcile_from_memory_md(state, memory_file)
+            
         return state
 
     def save_state(self, state: ProjectState) -> None:
@@ -92,25 +174,34 @@ class MemoryManager:
         self._update_rules_files()
 
     def _update_rules_files(self) -> None:
-        """Write agent rule files (.cursorrules, .clauderules) to project root so tools read them automatically."""
+        """Write agent rule files to project root so tools read them automatically."""
         rules_content = """# Unimem Agent Instructions
 
 Unimem is active in this project. You are resuming work from a previous session.
 
-Before you begin coding:
-1. Read the project memory file at `.unimem/memory.md` to get your full context:
-   - Current Goal & Task focus
-   - Completed and In-Progress features
-   - Architectural decisions
-   - Important files to locate
-2. Trust `.unimem/memory.md` as the source of truth for the project state.
+CRITICAL STARTUP RULE:
+Do NOT scan, list, or search the entire project repository or folder tree on startup. This wastes token context and is inefficient. Instead, follow these steps immediately:
+1. Run `unimem summary` to compile all recent events and file modifications into the memory layer.
+2. Read the project memory file at `.unimem/memory.md` to get your full context (current goals, active task, completed features, recent decisions, and important files).
+3. Trust `.unimem/memory.md` as the absolute source of truth for the project state.
 
 When you finish or pause work:
 - Update the Unimem state (e.g. by running `unimem summary` or updating `.unimem/state.json`) so the next agent can seamlessly take over.
 """
         try:
+            # Write to root level rule files for different agents
             FileStore.write(self.project_root / ".cursorrules", rules_content)
             FileStore.write(self.project_root / ".clauderules", rules_content)
+            FileStore.write(self.project_root / ".windsurfrules", rules_content)
+            FileStore.write(self.project_root / ".clinerules", rules_content)
+            
+            # Write to .github/copilot-instructions.md for Copilot
+            copilot_dir = self.project_root / ".github"
+            try:
+                copilot_dir.mkdir(parents=True, exist_ok=True)
+                FileStore.write(copilot_dir / "copilot-instructions.md", rules_content)
+            except Exception as e:
+                logger.debug(f"Failed to write copilot instructions: {e}")
         except Exception as e:
             logger.debug(f"Failed to write agent rule files: {e}")
 
