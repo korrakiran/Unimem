@@ -1,5 +1,7 @@
 """Claude Code agent adapter, subclassing GenericAdapter for session execution wrapper."""
 
+import os
+import signal
 from typing import List
 from unimem.adapters.generic import GenericAdapter
 from unimem.adapters.registry import AdapterRegistry
@@ -47,6 +49,17 @@ class ClaudeAdapter(GenericAdapter):
                 
             import subprocess
             logger.info(f"Running Claude Code: {' '.join(command)}")
+
+            # Register signal handlers so crashed/interrupted Claude sessions are closed cleanly
+            def _handle_signal(signum, frame):
+                if session_id and manager.is_initialized():
+                    manager.end_session(session_id)
+                signal.signal(signum, signal.SIG_DFL)
+                os.kill(os.getpid(), signum)
+
+            signal.signal(signal.SIGTERM, _handle_signal)
+            signal.signal(signal.SIGINT, _handle_signal)
+
             result = subprocess.run(command, env=env, shell=False)
             
             final_changed = []

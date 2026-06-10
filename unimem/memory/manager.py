@@ -2,6 +2,7 @@
 
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 import uuid
@@ -153,7 +154,10 @@ class MemoryManager:
         state_file = get_state_file(self.project_root)
         if not state_file.exists():
             raise FileNotFoundError(f"Unimem not initialized. Run 'unimem init' first at {self.project_root}")
-            
+
+        # Recover any sessions that were orphaned by a crash before loading state
+        self.recover_orphan_sessions()
+
         data = JsonStore.load(state_file)
         migrated_data = migrate_state(data)
         state = ProjectState(**migrated_data)
@@ -173,6 +177,48 @@ class MemoryManager:
         self.update_memory_md(state)
         self._update_rules_files()
 
+    def recover_orphan_sessions(self) -> List[str]:
+        """Close sessions whose end_time is None and start_time is older than 10 minutes.
+
+        Returns a list of recovered session IDs.
+        """
+        sessions_dir = get_sessions_dir(self.project_root)
+        if not sessions_dir.exists():
+            return []
+
+        recovered = []
+        now = datetime.now(timezone.utc)
+        orphan_threshold_seconds = 10 * 60  # 10 minutes
+
+        for session_file in sessions_dir.glob("session_*.json"):
+            try:
+                data = JsonStore.load(session_file)
+                session = Session(**data)
+                if session.end_time is not None:
+                    continue  # Already closed
+
+                # Parse start_time — handles both offset-aware and naive ISO strings
+                start_str = session.start_time
+                try:
+                    start_dt = datetime.fromisoformat(start_str)
+                    if start_dt.tzinfo is None:
+                        start_dt = start_dt.replace(tzinfo=timezone.utc)
+                except ValueError:
+                    continue  # Unparseable timestamp; skip
+
+                age_seconds = (now - start_dt).total_seconds()
+                if age_seconds >= orphan_threshold_seconds:
+                    logger.info(
+                        f"Recovering orphan session {session.session_id} "
+                        f"(tool={session.tool}, age={age_seconds:.0f}s)"
+                    )
+                    self.end_session(session.session_id)
+                    recovered.append(session.session_id)
+            except Exception as e:
+                logger.debug(f"Failed to inspect session file {session_file.name}: {e}")
+
+        return recovered
+
     def _update_rules_files(self) -> None:
         """Write agent rule files to project root so tools read them automatically."""
         rules_content = """# Unimem Agent Instructions
@@ -186,9 +232,10 @@ Do NOT scan, list, or search the entire project repository or folder tree on sta
 3. Read the human-readable project memory at `.unimem/memory.md` next to get the narrative context, recent decisions, and details.
 4. Trust `.unimem/state.json` and `.unimem/memory.md` as the absolute sources of truth for the project state. Do NOT attempt to reconstruct them or scan the repository.
 
-When you finish or pause work:
+- When you finish or pause work:
 - Update the Unimem state (e.g. by running `unimem summary`, or updating `.unimem/state.json` or `.unimem/memory.md`) so the next agent can seamlessly take over.
 - When you complete the current task, run: unimem task done --next "describe the next task"
+- If you are interrupted or about to stop, always run: unimem task done --next "describe next task" before exiting so context is preserved for the next agent.
 """
         try:
             # Write to root level rule files for different agents

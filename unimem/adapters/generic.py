@@ -1,6 +1,7 @@
 """Generic adapter that runs arbitrary commands wrapped in Unimem session state."""
 
 import os
+import signal
 import subprocess
 import sys
 from typing import Dict, Any, List
@@ -89,6 +90,17 @@ class GenericAdapter(BaseAdapter):
             initial_changed = git_stats["unstaged"] + git_stats["staged"] + git_stats["untracked"]
             
         logger.info(f"Launching subprocess: {' '.join(command)}")
+
+        # Register signal handlers so crashed/interrupted sessions are closed cleanly
+        def _handle_signal(signum, frame):
+            if session_id and manager.is_initialized():
+                manager.end_session(session_id)
+            signal.signal(signum, signal.SIG_DFL)
+            os.kill(os.getpid(), signum)
+
+        signal.signal(signal.SIGTERM, _handle_signal)
+        signal.signal(signal.SIGINT, _handle_signal)
+
         try:
             # Execute command
             result = subprocess.run(

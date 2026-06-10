@@ -84,8 +84,16 @@ class LocalSummarizer(BaseSummarizer):
         # Task promotion logic
         if current_state.current_task:
             task_lower = current_state.current_task.lower()
-            if any(task_lower in feat.lower() for feat in completed):
+            # Standard promotion: current_task appears in completed features
+            promoted = any(task_lower in feat.lower() for feat in completed)
+            # Orphan-recovery promotion: current_task appears in in_progress_features
+            # and there were file changes, indicating work was done but session was lost
+            if not promoted and in_progress and any(
+                task_lower in feat.lower() for feat in in_progress
+            ) and bool(important_files):
+                promoted = True
+            if promoted:
                 current_state.current_task = current_state.next_task
                 current_state.next_task = ""
-        
+
         return current_state
