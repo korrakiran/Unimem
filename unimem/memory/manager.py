@@ -239,13 +239,25 @@ Do NOT scan, list, or search the entire project repository or folder tree on sta
 - If you are interrupted or about to stop, always run: unimem task done --next "describe next task" before exiting so context is preserved for the next agent.
 """
         try:
-            # Write to root level rule files for different agents
-            FileStore.write(self.project_root / ".cursorrules", rules_content)
-            FileStore.write(self.project_root / ".clauderules", rules_content)
-            FileStore.write(self.project_root / ".windsurfrules", rules_content)
-            FileStore.write(self.project_root / ".clinerules", rules_content)
-            FileStore.write(self.project_root / ".antigravityrules", rules_content)
-            FileStore.write(self.project_root / ".geminirules", rules_content)
+            # List of all major AI agent and editor rule files
+            rule_files = [
+                ".cursorrules",
+                ".clauderules",
+                ".windsurfrules",
+                ".clinerules",
+                ".antigravityrules",
+                ".geminirules",
+                ".aiderules",
+                ".aider.instructions.md",
+                ".supermavenrules",
+                ".codeiumrules",
+                ".continuerules",
+                ".doublerules",
+                ".tabninerules",
+                ".phindrules"
+            ]
+            for rule_file in rule_files:
+                FileStore.write(self.project_root / rule_file, rules_content)
             
             # Write to .github/copilot-instructions.md for Copilot
             copilot_dir = self.project_root / ".github"

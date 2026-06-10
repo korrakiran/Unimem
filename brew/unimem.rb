@@ -148,13 +148,26 @@ class Unimem < Formula
     EOS
 
     begin
-      File.write(File.join(home_dir, ".cursorrules"), rules_content)
-      File.write(File.join(home_dir, ".clauderules"), rules_content)
-      File.write(File.join(home_dir, ".windsurfrules"), rules_content)
-      File.write(File.join(home_dir, ".clinerules"), rules_content)
-      File.write(File.join(home_dir, ".antigravityrules"), rules_content)
-      File.write(File.join(home_dir, ".geminirules"), rules_content)
-      ohai "Successfully configured global agent rules in ~/.cursorrules, ~/.clauderules, ~/.windsurfrules, ~/.clinerules, ~/.antigravityrules, and ~/.geminirules"
+      rule_files = [
+        ".cursorrules",
+        ".clauderules",
+        ".windsurfrules",
+        ".clinerules",
+        ".antigravityrules",
+        ".geminirules",
+        ".aiderules",
+        ".aider.instructions.md",
+        ".supermavenrules",
+        ".codeiumrules",
+        ".continuerules",
+        ".doublerules",
+        ".tabninerules",
+        ".phindrules"
+      ]
+      rule_files.each do |f|
+        File.write(File.join(home_dir, f), rules_content)
+      end
+      ohai "Successfully configured global agent rules for Cursor, Claude Code, Windsurf, Cline, Aider, Gemini, Supermaven, Codeium, Continue, Double, Tabnine, and Phind"
     rescue => e
       opoo "Could not write global agent rules: #{e.message}"
     end
@@ -166,24 +179,27 @@ class Unimem < Formula
       # Unimem Auto-Rule Injector & Init
       unimem_inject_rules() {
         if [[ "$PWD" != "$HOME" && "$PWD" == "$HOME/"* ]]; then
-          if [[ ! -f ".cursorrules" && -f "$HOME/.cursorrules" ]]; then
-            cp "$HOME/.cursorrules" .cursorrules 2>/dev/null
-          fi
-          if [[ ! -f ".clauderules" && -f "$HOME/.clauderules" ]]; then
-            cp "$HOME/.clauderules" .clauderules 2>/dev/null
-          fi
-          if [[ ! -f ".windsurfrules" && -f "$HOME/.windsurfrules" ]]; then
-            cp "$HOME/.windsurfrules" .windsurfrules 2>/dev/null
-          fi
-          if [[ ! -f ".clinerules" && -f "$HOME/.clinerules" ]]; then
-            cp "$HOME/.clinerules" .clinerules 2>/dev/null
-          fi
-          if [[ ! -f ".antigravityrules" && -f "$HOME/.antigravityrules" ]]; then
-            cp "$HOME/.antigravityrules" .antigravityrules 2>/dev/null
-          fi
-          if [[ ! -f ".geminirules" && -f "$HOME/.geminirules" ]]; then
-            cp "$HOME/.geminirules" .geminirules 2>/dev/null
-          fi
+          local rule_files=(
+            ".cursorrules"
+            ".clauderules"
+            ".windsurfrules"
+            ".clinerules"
+            ".antigravityrules"
+            ".geminirules"
+            ".aiderules"
+            ".aider.instructions.md"
+            ".supermavenrules"
+            ".codeiumrules"
+            ".continuerules"
+            ".doublerules"
+            ".tabninerules"
+            ".phindrules"
+          )
+          for f in "${rule_files[@]}"; do
+            if [[ ! -f "$f" && -f "$HOME/$f" ]]; then
+              cp "$HOME/$f" "$f" 2>/dev/null
+            fi
+          done
           # Silently initialize Unimem if not present
           if [[ ! -d ".unimem" ]]; then
             unimem init --name "$(basename "$PWD")" >/dev/null 2>&1 &
