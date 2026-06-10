@@ -66,6 +66,7 @@ class Unimem < Formula
       }
       autoload -U add-zsh-hook
       add-zsh-hook chpwd unimem_inject_rules
+      add-zsh-hook precmd unimem_inject_rules
       unimem_inject_rules
     EOS
 
