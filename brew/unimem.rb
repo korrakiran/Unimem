@@ -9,11 +9,11 @@ class Unimem < Formula
   include Language::Python::Virtualenv
 
   desc "Universal Project Memory Layer for AI Coding Agents"
-  homepage "https://github.com/korrakiran/collector"
+  homepage "https://github.com/korrakiran/unimem"
   url "https://github.com/korrakiran/collector/archive/refs/tags/v0.4.0.tar.gz"
   sha256 "33157f6b92697883a76601ed3f5c2202fbfaa84445efe2f0ebdf16de0d8c2a83"
   license "MIT"
-  head "https://github.com/korrakiran/collector.git", branch: "main"
+  head "https://github.com/korrakiran/unimem.git", branch: "main"
 
   depends_on "python@3.12"
 
