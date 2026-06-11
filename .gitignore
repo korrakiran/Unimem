@@ -25,7 +25,12 @@ pip-delete-this-directory.txt
 metadata
 .unimem/
 *.png
+*.jpg
+*.jpeg
+*.gif
 /var/folders/
+/tmp/
+/private/var/
 # Unit test / coverage reports
 htmlcov/
 .tox/
