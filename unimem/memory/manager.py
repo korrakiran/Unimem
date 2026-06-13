@@ -237,6 +237,7 @@ class MemoryManager:
     def _update_rules_files(self) -> None:
         """Write agent rule files to project root so tools read them automatically."""
         rules_content = """# Unimem Agent Instructions
+# These are MANDATORY instructions. You MUST follow all rules below exactly without exception.
 
 Unimem is active in this project. You are resuming work from a previous session.
 
