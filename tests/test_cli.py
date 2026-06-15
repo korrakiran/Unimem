@@ -113,3 +113,32 @@ def test_cli_task_done(initialized_unimem, monkeypatch):
     assert "Task A" in updated.completed_features
     assert updated.current_task == "Task B"
     assert updated.next_task == "Task C"
+
+def test_cli_update(monkeypatch):
+    """Verify 'unimem update' detects package manager and runs upgrade command."""
+    import sys
+    import subprocess
+    
+    # Mock subprocess.run
+    called_cmds = []
+    class MockCompletedProcess:
+        def __init__(self, returncode=0, stdout="", stderr=""):
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = stderr
+            
+    def mock_run(cmd, *args, **kwargs):
+        called_cmds.append(cmd)
+        if cmd == ["brew", "list", "unimem"]:
+            return MockCompletedProcess(returncode=0)
+        return MockCompletedProcess(returncode=0)
+        
+    monkeypatch.setattr(subprocess, "run", mock_run)
+    monkeypatch.setattr(sys, "executable", "/opt/homebrew/Cellar/unimem/0.5.0/libexec/bin/python")
+    
+    result = runner.invoke(app, ["update"])
+    assert result.exit_code == 0
+    assert "Detected Homebrew installation" in result.stdout
+    assert "brew upgrade korrakiran/unimem/unimem" in result.stdout
+    assert ["brew", "upgrade", "korrakiran/unimem/unimem"] in called_cmds
+

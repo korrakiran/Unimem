@@ -15,6 +15,7 @@ from unimem.cli.commands.summary import summary_cmd
 from unimem.cli.commands.continue_cmd import continue_cmd
 from unimem.cli.commands.doctor import doctor_cmd
 from unimem.cli.commands.task import app as task_app
+from unimem.cli.commands.update import update_cmd
 from unimem.adapters.registry import AdapterRegistry, load_builtin_adapters
 from unimem.watcher.filesystem import FilesystemWatcher
 from unimem.utils.paths import find_project_root
@@ -36,6 +37,7 @@ app.add_typer(task_app, name="task")
 app.command("summary")(summary_cmd)
 app.command("continue")(continue_cmd)
 app.command("doctor")(doctor_cmd)
+app.command("update")(update_cmd)
 
 @app.command("watch")
 def watch_cmd():
