@@ -380,9 +380,8 @@ CRITICAL GIT RULE:
         JsonStore.save(event_file, event.model_dump())
         logger.debug(f"Event recorded: {event_file.name}")
         
-        # Rebuild state from all events to keep it continuously updated
+        # Rebuild state from all events to keep it continuously updated and sync memory.md in real-time
         try:
-            # Update only state.json, not memory.md during individual event record
             state = self.rebuild_state_from_events(update_memory=False)
             
             if auto_snapshot:

@@ -23,6 +23,8 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 metadata
+unimem.egg-info/
+*.egg-info/
 .unimem/
 *.png
 *.jpg

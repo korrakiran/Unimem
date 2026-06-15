@@ -11,7 +11,7 @@ class FileCollector:
     DEFAULT_IGNORES = {
         ".git", ".unimem", ".venv", "venv", "node_modules", 
         "build", "dist", "__pycache__", ".pytest_cache", ".eggs", 
-        ".DS_Store", "package-lock.json", "poetry.lock"
+        ".DS_Store", "package-lock.json", "poetry.lock", "AGENTS.md", "CLAUDE.md"
     }
 
     @classmethod

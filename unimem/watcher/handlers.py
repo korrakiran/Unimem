@@ -53,7 +53,7 @@ class UnimemFileSystemEventHandler(FileSystemEventHandler):
                 files_changed=files
             )
             self.manager.record_event(event, auto_snapshot=True)
-            logger.debug(f"[watcher] Recorded {event_type} event for {rel_path}")
+            logger.info(f"[watcher] Recorded {event_type} event for {rel_path}")
         except Exception as e:
             logger.debug(f"Error handling watcher event: {e}")
 

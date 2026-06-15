@@ -1,2 +1,0 @@
-[console_scripts]
-unimem = unimem.cli.app:app
