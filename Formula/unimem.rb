@@ -1,19 +1,18 @@
 # Homebrew Formula for Unimem CLI tool
 # To release:
-# 1. Tag and release Unimem on GitHub (e.g. v0.1.0).
+# 1. Tag and release Unimem on GitHub (e.g. v0.5.3).
 # 2. Get the tarball URL and calculate its SHA256 using: curl -sL <url> | shasum -a 256
 # 3. Update the url and sha256 fields below.
-# 4. Copy this file into your tap repository (e.g., github.com/korrakiran/homebrew-unimem/Formula/unimem.rb).
-# 5. Peace
-# 6. Happy coding!!
+# 4. Peace
+# 5. Happy coding!!
 
 class Unimem < Formula
   include Language::Python::Virtualenv
 
   desc "Universal Project Memory Layer for AI Coding Agents"
   homepage "https://github.com/korrakiran/unimem"
-  url "https://github.com/korrakiran/unimem/archive/refs/tags/v0.5.2.tar.gz"
-  sha256 "c57a4057c52e1de49d96934c36b4099ef0d69d87a5a7364df6a1d72fc0c47a2e"
+  url "https://github.com/korrakiran/unimem/archive/refs/tags/v0.5.3.tar.gz"
+  sha256 "SHA256_OF_V0.5.3_TARBALL"
   license "MIT"
   head "https://github.com/korrakiran/unimem.git", branch: "main"
 

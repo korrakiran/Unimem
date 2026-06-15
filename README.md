@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
 [![Platform Support](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](#-installation-guide)
-[![Homebrew Formula](https://img.shields.io/badge/Homebrew-Formula-orange.svg)](https://github.com/korrakiran/homebrew-unimem)
-[![Tests](https://img.shields.io/badge/Tests-41%20passing-brightgreen.svg)](https://github.com/korrakiran/collector)
-[![Version](https://img.shields.io/badge/Version-0.5.2-blue.svg)](https://github.com/korrakiran/collector/releases)
+[![Homebrew Formula](https://img.shields.io/badge/Homebrew-Formula-orange.svg)](https://github.com/korrakiran/unimem/blob/main/Formula/unimem.rb)
+[![Tests](https://img.shields.io/badge/Tests-41%20passing-brightgreen.svg)](https://github.com/korrakiran/unimem)
+[![Version](https://img.shields.io/badge/Version-0.5.3-blue.svg)](https://github.com/korrakiran/unimem/releases)
 
 **Unimem** is a universal, persistent project memory and handoff layer designed for AI coding agents (like Claude Code, Gemini CLI, Cursor, Aider, Windsurf, Cline, GitHub Copilot, and Antigravity). It helps you seamlessly switch between different AI coding tools mid-project without losing context, progress, or architectural decisions.
 
@@ -74,8 +74,8 @@ sequenceDiagram
 
 #### Option 1: Via Homebrew (Recommended)
 ```bash
-brew tap korrakiran/unimem
-brew install korrakiran/unimem/unimem
+brew tap korrakiran/unimem https://github.com/korrakiran/unimem.git
+brew install unimem
 source ~/.zshrc
 ```
 *Note: Sourcing your shell configuration is only required once to activate the newly injected shell hooks in your current terminal session. Any newly opened terminal tabs or windows will load them automatically.*
@@ -93,8 +93,8 @@ pipx install unimem
 
 #### Option 1: Via Homebrew (Linuxbrew)
 ```bash
-brew tap korrakiran/unimem
-brew install korrakiran/unimem/unimem
+brew tap korrakiran/unimem https://github.com/korrakiran/unimem.git
+brew install unimem
 source ~/.zshrc
 ```
 
@@ -208,7 +208,7 @@ AGENTS.md
 
 #### If installed via Homebrew:
 ```bash
-brew uninstall korrakiran/unimem/unimem
+brew uninstall unimem
 brew untap korrakiran/unimem
 ```
 
