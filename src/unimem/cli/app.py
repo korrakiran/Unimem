@@ -190,29 +190,29 @@ def status_cmd():
 def sync_cmd():
     """Detect project root, initialize if unseen, and trigger summary update silently."""
     project_root = find_project_root()
-    
-    # Check if current directory has project indicators
-    indicators = [".git", "package.json", "pyproject.toml", "Cargo.toml", "go.mod"]
-    is_project = any((project_root / ind).exists() for ind in indicators)
-    
-    if not is_project:
+
+    # Never auto-initialize the home directory itself
+    if project_root == Path.home():
         return
-        
+
     manager = MemoryManager(project_root)
-    
+
     try:
         if not manager.is_initialized():
             manager.bootstrap_if_needed()
+            # Always sync rules immediately after first init so AGENTS.md / CLAUDE.md
+            # are written even when there is no existing project indicator file.
+            sync_project_rules(project_root)
         else:
             state = manager.rebuild_state_from_events(update_memory=True)
             sync_project_rules(project_root)
-            
+
             summary_text = generate_agent_summary(state, project_root)
             if not state.past_summaries or state.past_summaries[-1] != summary_text:
                 state.past_summaries.append(summary_text)
                 state.past_summaries = state.past_summaries[-10:]
                 manager.save_state(state, update_memory=True)
-        
+
         # Ensure daemon is running to watch files automatically
         start_daemon(project_root)
     except Exception as e:
