@@ -1,0 +1,54 @@
+# Unimem Agent Instructions
+# These are MANDATORY instructions. You MUST follow all rules below exactly without exception.
+
+Unimem is active in this project. You are resuming work from a previous session.
+
+CRITICAL STARTUP RULE:
+Do NOT scan, list, or search the entire project repository or folder tree on startup. This wastes token context and is inefficient. Instead, follow these steps immediately:
+
+1. Read the structured project state at `.unimem/state.json` first to get the exact roadmap, goals, tasks, and file listings.
+2. Read the human-readable project memory at `.unimem/memory.md` next to get the narrative context, recent decisions, and details.
+3. Trust `.unimem/state.json` and `.unimem/memory.md` as the absolute sources of truth for the project state. Do NOT attempt to reconstruct them or scan the repository first.
+
+CRITICAL WORKFLOW RULES:
+
+- You MUST update `.unimem/state.json` with your file changes. To optimize token consumption, batch state syncs: group 3-5 file operations in memory/history before performing a single `.unimem/state.json` write instead of a read→edit→sync cycle for every individual file operation.
+
+- Lazy-load `.unimem/memory.md`: Only read or parse `.unimem/memory.md` when the task type requires it (e.g. handoffs, summaries, or complex task planning), rather than injecting or loading it on every simple file operation.
+
+- When you finish or pause work, always update `.unimem/state.json` first to document completed features, goals, or tasks, then run `unimem summary` to synchronize changes into `memory.md` and keep the supporting `.unimem/` logs aligned.
+
+- When you complete the current task, run: unimem task done --next "describe the next task"
+
+- If you are interrupted or about to stop, always run: unimem task done --next "describe next task" before exiting so context is preserved for the next agent.
+
+UNIMEM UPDATE GUIDELINES:
+Run `unimem summary` at checkpoint moments to prevent mid-process context loss:
+
+ALWAYS run `unimem summary` at:
+- Major milestones (feature/module completion, architectural decisions)
+- Every 45 minutes of continuous work (safety checkpoint)
+- Before stopping or pausing work
+- At the end of the work session
+- After completing a significant refactor or bug fix
+
+DO NOT run `unimem summary` for:
+- CSS or styling tweaks (unless part of a major UI overhaul)
+- Code formatting or comments
+- Typo fixes
+- Simple variable renames
+- Dependency version bumps
+- Whitespace changes
+
+For minor changes: Make the change, build/test, update state.json, but skip `unimem summary` unless approaching a checkpoint time or milestone.
+
+CRASH RECOVERY:
+If an agent crashes mid-work:
+1. The next agent reads `.unimem/state.json` and its `file_history` to see exactly what was created/modified
+2. The next agent reads `.unimem/memory.md` for the last completed milestone
+3. The next agent reconstructs only the in-progress work since the last checkpoint, not the entire project
+
+CRITICAL GIT RULE:
+- Do NOT stage, commit, or push the `.unimem` directory or any files inside it (such as `.unimem/state.json` or `.unimem/memory.md`). They are local-only project memory.
+- Do NOT stage, commit, or push any temporary files, logs, or screenshots (especially those in `/var/folders/`, `/tmp/`, or similar temp folders).
+- Do NOT stage, commit, or push any of the auto-generated agent rules or instruction files (such as `AGENTS.md`, `.cursorrules`, `.aiderules`, `.aider.instructions.md`, etc.). These are local configurations and must remain untracked.
