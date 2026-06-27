@@ -68,14 +68,14 @@ A local `.unimem` directory is created as a symlink pointing to the global direc
 
 ## Installation
 
-Because Unimem is distributed as a single-repository setup, you must explicitly supply the URL to the main repository when tapping:
+Install Unimem using Homebrew with the following shorthand commands:
 
 ```bash
 # 1. Tap the repository:
-brew tap korrakiran/unimem https://github.com/korrakiran/Unimem.git
+brew tap korrakiran/unimem
 
 # 2. Install the package:
-brew install unimem
+brew install korrakiran/unimem/unimem
 
 # 3. Inject the silent shell hooks:
 unimem shell install
