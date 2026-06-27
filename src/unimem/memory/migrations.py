@@ -26,6 +26,8 @@ def migrate_state(data: Dict[str, Any]) -> Dict[str, Any]:
         "in_progress_features": [],
         "important_files": [],
         "recent_decisions": [],
+        "constraints": [],
+        "mistakes": [],
         "blocked_by": [],
         "tool_history": [],
         "file_history": [],

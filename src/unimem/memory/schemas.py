@@ -27,6 +27,8 @@ class ProjectState(BaseModel):
     in_progress_features: List[str] = Field(default_factory=list, description="List of features currently in progress.")
     important_files: List[str] = Field(default_factory=list, description="List of critical files in the codebase.")
     recent_decisions: List[str] = Field(default_factory=list, description="Decisions made recently (e.g. choice of DB).")
+    constraints: List[str] = Field(default_factory=list, description="Safety rules, strict requirements, or non-negotiable checks.")
+    mistakes: List[str] = Field(default_factory=list, description="Common anti-patterns, past bugs, or lessons learned to avoid repeating.")
     blocked_by: List[str] = Field(default_factory=list, description="Active blockers or dependencies.")
     tool_history: List[str] = Field(default_factory=list, description="History of tools/agents invoked in the project.")
     file_history: List[FileOperation] = Field(default_factory=list, description="Tracking of individual file operations.")

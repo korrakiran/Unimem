@@ -156,6 +156,18 @@ class MemoryManager:
             tool_history = extract_list_items("Tools Used")
             if tool_history:
                 state.tool_history = tool_history
+
+            preferences = extract_list_items("Coding Preferences")
+            if preferences:
+                state.coding_preferences = preferences
+
+            constraints = extract_list_items("Constraints")
+            if constraints:
+                state.constraints = constraints
+
+            mistakes = extract_list_items("Mistakes / Anti-Patterns")
+            if mistakes:
+                state.mistakes = mistakes
                 
         except Exception as e:
             logger.debug(f"Failed to reconcile state from memory.md: {e}")
@@ -268,7 +280,7 @@ class MemoryManager:
         logger.debug(f"Event recorded: {event_file.name}")
         
         try:
-            state = self.rebuild_state_from_events(update_memory=False)
+            state = self.rebuild_state_from_events(update_memory=True)
             if auto_snapshot:
                 create_snapshot(self.project_root, state)
         except FileNotFoundError:
@@ -301,7 +313,7 @@ class MemoryManager:
             event_files.append(event_file)
             
         try:
-            state = self.rebuild_state_from_events(update_memory=False)
+            state = self.rebuild_state_from_events(update_memory=True)
             if auto_snapshot:
                 create_snapshot(self.project_root, state)
         except FileNotFoundError:
@@ -516,6 +528,8 @@ Approved
         tech_list = "\n".join([f"- {item}" for item in state.tech_stack]) if state.tech_stack else "- None"
         prefs_list = "\n".join([f"- {item}" for item in state.coding_preferences]) if state.coding_preferences else "- None"
         rules_list = "\n".join([f"- {item}" for item in state.custom_rules]) if state.custom_rules else "- None"
+        constraints_list = "\n".join([f"- {item}" for item in state.constraints]) if state.constraints else "- None"
+        mistakes_list = "\n".join([f"- {item}" for item in state.mistakes]) if state.mistakes else "- None"
         
         md_content = f"""# Unimem Project Memory: {state.project_name}
  
@@ -541,6 +555,12 @@ Approved
  
 ### Coding Preferences
 {prefs_list}
+
+### Constraints
+{constraints_list}
+
+### Mistakes / Anti-Patterns
+{mistakes_list}
  
 ### Custom Rules
 {rules_list}

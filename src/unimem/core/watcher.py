@@ -1,6 +1,7 @@
 """Filesystem watcher using Watchdog observers for Unimem v2.0.0."""
 
 import time
+import threading
 from pathlib import Path
 from typing import Optional
 
@@ -17,6 +18,31 @@ except ImportError:
     FileSystemEventHandler = object
     HAS_WATCHDOG = False
 
+class DebouncedCompiler:
+    """Thread-safe debouncer to batch and compile filesystem events."""
+
+    def __init__(self, handler, delay: float = 3.0):
+        self.handler = handler
+        self.delay = delay
+        self.timer: Optional[threading.Timer] = None
+        self.lock = threading.Lock()
+
+    def touch(self) -> None:
+        """Reset the compilation timer."""
+        with self.lock:
+            if self.timer:
+                self.timer.cancel()
+            self.timer = threading.Timer(self.delay, self.compile)
+            self.timer.start()
+
+    def compile(self) -> None:
+        """Trigger compilation execution."""
+        try:
+            self.handler.batch_operations()
+        except Exception as e:
+            logger.debug(f"Debounced compilation exception: {e}")
+
+
 class UnimemFileSystemEventHandler(FileSystemEventHandler if HAS_WATCHDOG else object):
     """Listens to filesystem events and writes event summaries to Unimem."""
 
@@ -26,6 +52,7 @@ class UnimemFileSystemEventHandler(FileSystemEventHandler if HAS_WATCHDOG else o
         self.project_root = project_root
         self.manager = MemoryManager(project_root)
         self._pending_events = []
+        self.compiler = DebouncedCompiler(self, delay=3.0)
 
     def _should_process(self, path_str: str) -> bool:
         """Filter out files that should be ignored."""
@@ -64,8 +91,8 @@ class UnimemFileSystemEventHandler(FileSystemEventHandler if HAS_WATCHDOG else o
             self._pending_events.append(event)
             logger.info(f"[watcher] Queued {event_type} event for {rel_path}")
             
-            if len(self._pending_events) >= 5:
-                self.batch_operations()
+            # Touch debouncer to trigger compiler batching
+            self.compiler.touch()
         except Exception as e:
             logger.debug(f"Error handling watcher event: {e}")
 
@@ -77,7 +104,7 @@ class UnimemFileSystemEventHandler(FileSystemEventHandler if HAS_WATCHDOG else o
         events_to_process = list(self._pending_events)
         self._pending_events.clear()
         
-        logger.info(f"[watcher] Batching {len(events_to_process)} file events...")
+        logger.info(f"[watcher] Batch compiling {len(events_to_process)} file events...")
         self.manager.record_events_batch(events_to_process, auto_snapshot=True)
 
     def on_created(self, event) -> None:

@@ -189,6 +189,27 @@ def generate_agent_summary(state: ProjectState, project_root: Path) -> str:
     if not recommendations:
         recommendations.append("- Continue with the current task sequence.")
 
+    # Cognitive memory compilation
+    cognitive = []
+    if state.recent_decisions:
+        cognitive.append("**Decisions**:")
+        for dec in state.recent_decisions[:5]:
+            cognitive.append(f"- {dec}")
+    if state.constraints:
+        cognitive.append("**Constraints**:")
+        for const in state.constraints[:5]:
+            cognitive.append(f"- {const}")
+    if state.coding_preferences:
+        cognitive.append("**Coding Preferences**:")
+        for pref in state.coding_preferences[:5]:
+            cognitive.append(f"- {pref}")
+    if state.mistakes:
+        cognitive.append("**Mistakes / Anti-patterns to avoid**:")
+        for mist in state.mistakes[:5]:
+            cognitive.append(f"- {mist}")
+    if not cognitive:
+        cognitive.append("- No custom decisions, constraints, or preferences recorded.")
+
     tech_stack_str = ", ".join(state.tech_stack) if state.tech_stack else "Not specified"
 
     return f"""### 📝 Unimem Project Summary: {state.project_name}
@@ -205,6 +226,9 @@ def generate_agent_summary(state: ProjectState, project_root: Path) -> str:
 
 #### 🏛️ Current Architecture
 {chr(10).join(arch_notes)}
+
+#### 🧠 Cognitive Memory
+{chr(10).join(cognitive)}
 
 #### 🎯 Pending Tasks
 {chr(10).join(pending)}

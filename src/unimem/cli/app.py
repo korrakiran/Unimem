@@ -2,6 +2,7 @@
 
 import sys
 import subprocess
+from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
@@ -17,6 +18,7 @@ from unimem.memory.manager import MemoryManager
 from unimem.hooks.installer import install_hooks, uninstall_hooks, check_hooks
 from unimem.utils.paths import find_project_root, get_config_path
 from unimem.utils.logger import logger
+from unimem.core.daemon import start_daemon, stop_daemon, run_daemon, is_daemon_running
 
 app = typer.Typer(
     name="unimem",
@@ -29,6 +31,14 @@ console = Console()
 # Task subcommand group
 task_app = typer.Typer(help="Manage project tasks")
 app.add_typer(task_app, name="task")
+
+# Shell hooks subcommand group
+shell_app = typer.Typer(help="Manage shell hooks installation")
+app.add_typer(shell_app, name="shell")
+
+# Daemon subcommand group
+daemon_app = typer.Typer(help="Manage background daemon lifecycle")
+app.add_typer(daemon_app, name="daemon")
 
 
 @app.command("init")
@@ -50,6 +60,8 @@ def init_cmd(
     
     if manager.is_initialized():
         console.print(f"[yellow]Unimem is already initialized for {project_root}.[/yellow]")
+        # Start daemon if not running
+        start_daemon(project_root)
         raise typer.Exit()
         
     try:
@@ -63,6 +75,9 @@ def init_cmd(
             installed = install_hooks()
             if installed:
                 console.print("[green]Idempotently installed shell hooks in config files.[/green]")
+        
+        # Spawn the background daemon watcher
+        start_daemon(project_root)
                 
     except Exception as e:
         console.print(f"[red]Error initializing Unimem: {e}[/red]")
@@ -76,23 +91,21 @@ def summary_cmd():
     manager = MemoryManager(project_root)
 
     if not manager.is_initialized():
-        # Auto-init if unseen
         manager.bootstrap_if_needed()
         
     try:
-        # Rebuild state from events and sync rule files
         state = manager.rebuild_state_from_events(update_memory=True)
-        
-        # Generate and save agent summary
         summary_text = generate_agent_summary(state, project_root)
         
-        # Add summary to past summaries (keeping latest 10)
         if not state.past_summaries or state.past_summaries[-1] != summary_text:
             state.past_summaries.append(summary_text)
             state.past_summaries = state.past_summaries[-10:]
             manager.save_state(state, update_memory=True)
             
         console.print(summary_text)
+        
+        # Start background daemon if missing
+        start_daemon(project_root)
     except Exception as e:
         console.print(f"[red]Error compiling summary: {e}[/red]")
         raise typer.Exit(code=1)
@@ -116,11 +129,14 @@ def status_cmd():
         
     # Header Panel
     tech_stack_str = ", ".join(state.tech_stack) if state.tech_stack else "Not specified"
+    daemon_status = "[green]RUNNING[/green]" if is_daemon_running(project_root) else "[yellow]STOPPED[/yellow]"
+    
     console.print(Panel(
         f"[bold cyan]{state.project_name}[/bold cyan]\n"
         f"[italic]{state.description or 'No description'}[/italic]\n\n"
         f"[bold]Root:[/bold] {project_root}\n"
-        f"[bold]Tech Stack:[/bold] {tech_stack_str}",
+        f"[bold]Tech Stack:[/bold] {tech_stack_str}\n"
+        f"[bold]Watcher Daemon:[/bold] {daemon_status}",
         title="Unimem Status",
         expand=False
     ))
@@ -165,6 +181,9 @@ def status_cmd():
         title="🌿 Git Status",
         expand=False
     ))
+    
+    # Start background daemon if it's currently stopped
+    start_daemon(project_root)
 
 
 @app.command("sync")
@@ -177,7 +196,6 @@ def sync_cmd():
     is_project = any((project_root / ind).exists() for ind in indicators)
     
     if not is_project:
-        # Exit quietly if not inside a project directory
         return
         
     manager = MemoryManager(project_root)
@@ -185,20 +203,68 @@ def sync_cmd():
     try:
         if not manager.is_initialized():
             manager.bootstrap_if_needed()
-            # Rules sync is performed as part of initialization
         else:
-            # Rebuild state and rules for known project
             state = manager.rebuild_state_from_events(update_memory=True)
             sync_project_rules(project_root)
             
-            # Update summary text
             summary_text = generate_agent_summary(state, project_root)
             if not state.past_summaries or state.past_summaries[-1] != summary_text:
                 state.past_summaries.append(summary_text)
                 state.past_summaries = state.past_summaries[-10:]
                 manager.save_state(state, update_memory=True)
+        
+        # Ensure daemon is running to watch files automatically
+        start_daemon(project_root)
     except Exception as e:
         logger.debug(f"Sync error encountered: {e}")
+
+
+@app.command("continue")
+def continue_cmd():
+    """Output the cognitive project continuation prompt to hand off to the next agent."""
+    project_root = find_project_root()
+    manager = MemoryManager(project_root)
+
+    if not manager.is_initialized():
+        console.print("[yellow]Unimem is not initialized. Run 'unimem init' first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    try:
+        state = manager.load_state(reconcile_memory=True)
+    except Exception as e:
+        console.print(f"[red]Error loading project state: {e}[/red]")
+        raise typer.Exit(code=1)
+
+    files = ", ".join(state.important_files[:5]) if state.important_files else "None"
+    decisions = "\n".join(f"- {d}" for d in state.recent_decisions[:3]) if state.recent_decisions else "None"
+    constraints = "\n".join(f"- {c}" for c in state.constraints[:3]) if state.constraints else "None"
+    mistakes = "\n".join(f"- {m}" for m in state.mistakes[:3]) if state.mistakes else "None"
+
+    prompt = f"""### 🧠 Unimem Cognitive Handoff: Continue Work
+You are resuming work on the project **{state.project_name}**.
+ 
+**Goal**: {state.current_goal or "Not set"}
+**Current Task**: {state.current_task or "Not set"}
+**Next Task**: {state.next_task or "Not set"}
+ 
+#### ⚙️ Tech Stack & Key Files
+* Tech Stack: {", ".join(state.tech_stack) if state.tech_stack else "Not specified"}
+* Important Files: {files}
+ 
+#### 🏛️ Decisions, Constraints & Mistakes
+* **Decisions**:
+{decisions}
+* **Constraints**:
+{constraints}
+* **Mistakes to Avoid**:
+{mistakes}
+ 
+*Please review the full context in `.unimem/memory.md` and check `.unimem/state.json` for historical event snapshots. Tell the user how you would like to proceed with **"{state.current_task or 'the next step'}"**.*
+"""
+    console.print(prompt)
+    
+    # Auto start daemon
+    start_daemon(project_root)
 
 
 @app.command("doctor")
@@ -250,6 +316,14 @@ def doctor_cmd():
         except Exception as e:
             table.add_row("Project State", "[red]ERROR[/red]", f"Failed to parse project state: {e}")
             all_ok = False
+            
+        # Daemon status check
+        daemon_ok = is_daemon_running(project_root)
+        table.add_row(
+            "Background Daemon",
+            "[green]OK[/green]" if daemon_ok else "[yellow]STOPPED[/yellow]",
+            "Background process watcher is running." if daemon_ok else "Watcher process is not active."
+        )
     else:
         table.add_row("Project Init", "[yellow]WARN[/yellow]", "Current directory is not initialized with Unimem.")
         
@@ -297,14 +371,13 @@ def task_done_cmd(
         console.print(f"  [bold]Current Goal:[/bold] {state.current_goal or 'Not set'}")
         console.print(f"  [bold]Current Task:[/bold] {state.current_task or 'Not set'}")
         console.print(f"  [bold]Next Task:[/bold]    {state.next_task or 'Not set'}")
+        
+        # Start daemon if not running
+        start_daemon(project_root)
     except Exception as e:
         console.print(f"[red]Error completing task: {e}[/red]")
         raise typer.Exit(code=1)
 
-
-# Also add a subcommand group for shell hooks installation/uninstallation
-shell_app = typer.Typer(help="Manage shell hooks installation")
-app.add_typer(shell_app, name="shell")
 
 @shell_app.command("install")
 def shell_install():
@@ -322,6 +395,7 @@ def shell_install():
         console.print(f"[red]Failed to install shell hooks: {e}[/red]")
         raise typer.Exit(code=1)
 
+
 @shell_app.command("uninstall")
 def shell_uninstall():
     """Uninstall unimem shell hooks from your shell profile configs."""
@@ -336,6 +410,31 @@ def shell_uninstall():
     except Exception as e:
         console.print(f"[red]Failed to uninstall shell hooks: {e}[/red]")
         raise typer.Exit(code=1)
+
+
+@daemon_app.command("run")
+def daemon_run(
+    root: str = typer.Option(
+        ...,
+        "--root",
+        help="Absolute path to the project root directory."
+    )
+):
+    """Internal command to run the file watcher loop for the background process daemon."""
+    project_root = Path(root)
+    try:
+        run_daemon(project_root)
+    except Exception as e:
+        sys.stderr.write(f"Daemon runtime error: {e}\n")
+        raise typer.Exit(code=1)
+
+
+@daemon_app.command("stop")
+def daemon_stop():
+    """Stop the running background process daemon for the current directory."""
+    project_root = find_project_root()
+    stop_daemon(project_root)
+    console.print("[green]Requested background watcher daemon stop.[/green]")
 
 
 # Maintain update command for CLI upgrades

@@ -12,10 +12,9 @@ ZSH_HOOK_CODE = f"""
 {HOOK_START_MARKER}
 # Unimem Shell Hook for zsh
 unimem_hook() {{
-  setopt localoptions nomonitor 2>/dev/null
   if [[ "$PWD" != "$_UNIMEM_LAST_PWD" ]]; then
     export _UNIMEM_LAST_PWD="$PWD"
-    unimem sync >/dev/null 2>&1 &
+    (unimem sync >/dev/null 2>&1 &) >/dev/null 2>&1
   fi
 }}
 autoload -U add-zsh-hook 2>/dev/null
@@ -30,7 +29,7 @@ BASH_HOOK_CODE = f"""
 unimem_hook() {{
   if [[ "$PWD" != "$_UNIMEM_LAST_PWD" ]]; then
     export _UNIMEM_LAST_PWD="$PWD"
-    unimem sync >/dev/null 2>&1 &
+    (unimem sync >/dev/null 2>&1 &) >/dev/null 2>&1
   fi
 }}
 if [[ ! "$PROMPT_COMMAND" =~ "unimem_hook" ]]; then
@@ -44,6 +43,7 @@ FISH_HOOK_CODE = f"""
 # Unimem Shell Hook for fish
 function __unimem_hook --on-variable PWD
     unimem sync >/dev/null 2>&1 &
+    disown 2>/dev/null
 end
 {HOOK_END_MARKER}
 """
