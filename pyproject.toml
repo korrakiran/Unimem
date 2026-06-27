@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unimem"
-version = "0.6.0"
+version = "2.0.0"
 description = "Universal Project Memory Layer for AI Coding Agents"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -42,5 +42,5 @@ dev = [
 unimem = "unimem.cli.app:app"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["unimem*"]

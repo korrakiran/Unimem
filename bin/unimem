@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Unimem runner script for local development and direct execution
+
+# Determine project directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+
+# Execute unimem CLI typer app using python
+PYTHONPATH="$DIR/src" python3 -m unimem.cli.app "$@"
