@@ -1,7 +1,6 @@
 """Low-level and structured file storage utilities for Unimem."""
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Union
 

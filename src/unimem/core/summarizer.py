@@ -2,7 +2,8 @@
 
 import re
 from abc import ABC, abstractmethod
-from typing import List, Set
+from pathlib import Path
+from typing import List
 from unimem.memory.schemas import ProjectState, Event, FileOperation
 from unimem.utils.logger import logger
 

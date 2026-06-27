@@ -1,6 +1,6 @@
 """Shell hook installer and manager for Unimem v2.0.0."""
 
-import os
+import re
 from pathlib import Path
 from typing import List, Tuple
 from unimem.utils.logger import logger
@@ -66,7 +66,7 @@ def remove_hook_content(content: str) -> str:
     )
     return pattern.sub("", content).strip()
 
-import re
+
 
 def install_hooks() -> List[str]:
     """Install unimem shell hooks into config files in an idempotent manner.

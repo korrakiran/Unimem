@@ -1,13 +1,12 @@
 """MemoryManager orchestrates all reading/writing of states, events, and sessions in Unimem v2.0.0."""
 
-import os
 import re
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
-from unimem.memory.schemas import ProjectState, Event, Session, FileOperation
+from unimem.memory.schemas import ProjectState, Event, Session
 from unimem.memory.migrations import migrate_state
 from unimem.memory.snapshots import create_snapshot
 from unimem.core.storage import JsonStore, FileStore

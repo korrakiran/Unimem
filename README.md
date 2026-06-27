@@ -1,128 +1,169 @@
-# Unimem v2 — Universal Project Memory Layer for AI Coding Agents
+# Unimem
+
+### The Universal Project Memory Layer for AI Coding Agents
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/Python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
-[![Platform Support](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey.svg)](#-installation-guide)
-[![Homebrew Formula](https://img.shields.io/badge/Homebrew-Formula-orange.svg)](https://github.com/korrakiran/unimem/blob/main/Formula/unimem.rb)
-[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/korrakiran/unimem/releases)
-
-**Unimem** is a universal, persistent project memory and handoff layer designed for AI coding agents (such as Claude Code, Gemini CLI, Cursor, Aider, Windsurf, Cline, and GitHub Copilot). It maintains project memory and auto-injects context into supported AI tools so you can switch tools mid-project without losing momentum.
-
-Version 2.0.0 is a complete rewrite featuring a clean, modular architecture, global configuration, and centralized per-project memory persistence.
+[![Platform Support](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey.svg)](#-installation)
+[![Version](https://img.shields.io/badge/Version-2.0.0-blue.svg)](https://github.com/korrakiran/Unimem/releases)
 
 ---
 
 ## Why Unimem?
 
-When developing with AI agents:
-* **Token limits / context exhaustion** force you to restart sessions, losing context.
-* **Tool switching** (e.g. from Claude Code to Aider) requires writing long prompts explaining what was done.
-* **No persistent memory** means fresh agents lack awareness of project goals, tech stack, or coding preferences.
+AI coding agents are powerful, but they are bounded by context limits and session boundaries:
+* **Context Loss**: Every time you start a new chat, run a new agent command, or switch tools, the agent forgets previous progress.
+* **Redundant Onboarding**: You waste time re-explaining the architecture, code conventions, ongoing tasks, and recent decisions.
+* **Tool Fragmentation**: Switching between Claude Code, Aider, Gemini CLI, or Cursor means manually copying summaries and instruction files back and forth.
 
-**Unimem** solves this by maintaining a persistent project brain. Incoming agents read `memory.md` to instantly learn the project state, and outgoing agents write their progress automatically.
-
----
-
-## v2.0.0 Architecture & Features
-
-```
-unimem/
-├── bin/            # Executable helper scripts
-├── src/            # Modular python package
-│   ├── core/       # Configuration, git/file collection, adapters, summarizer
-│   ├── hooks/      # Idempotent shell hooks (zsh, bash, fish)
-│   ├── memory/     # Managers, schemas, migrations, snapshots
-│   ├── cli/        # Typer entry point and subcommands
-│   └── utils/      # Path resolution, timestamps, logging
-├── Formula/        # Homebrew formula
-├── README.md       # Documentation
-└── pyproject.toml  # Package configuration
-```
-
-### Key Improvements in v2.0.0:
-* **Global Memory Hub**: Memory is centralized under `~/.unimem/projects/<project-id>/` to keep project roots clean, using lightweight local `.unimem` pointer symlinks for agent visibility.
-* **Global Configuration**: Customize behavior in `~/.unimem/config.json`.
-* **Idempotent Shell Hooks**: Inbuilt command (`unimem shell install`) safely adds hooks to `.zshrc`, `.bashrc`, and `.config/fish/config.fish` with automatic background silent mode (`nomonitor`) preventing annoying shell output.
-* **Clean Project Detection**: Automatically detects projects using git roots, `package.json`, `pyproject.toml`, `Cargo.toml`, or `go.mod` on directory entrance.
-* **Rule Merging Engine**: Detects rule templates in your home directory, merges them with project-specific rules, and injects Unimem defaults.
+**Unimem solves this by acting as a persistent, background memory layer for your workspace.** It maintains a centralized, structured database of project objectives, tech stack settings, completed tasks, and architectural decisions, automatically injecting this context into all compliant AI coding tools.
 
 ---
 
-## Installation Guide
+## Key Features
 
-### macOS / Linux
+* **Persistent Project Memory**: Centralized project state keeps track of goals, pending tasks, tech stack details, and custom coding preferences across tool restarts.
+* **Auto Project Detection**: Identifies git roots, `package.json`, `pyproject.toml`, `Cargo.toml`, or `go.mod` files to automatically map project memory.
+* **Seamless Shell Integration**: Background shell hooks silently update project context whenever you change directories, avoiding manual command runs.
+* **Bi-directional Sync (`memory.md` ⟷ `state.json`)**: Auto-generates a clean, human/AI-readable `memory.md` markdown file. Any direct updates written to it by AI agents are parsed and reconciled back into structured state JSON.
+* **AI Rule Auto-Injections**: Dynamically generates and updates configuration rules for multiple tools (e.g. `.cursorrules`, `.clauderules`, `.clinerules`, `.aiderules`, and `.aider.instructions.md`).
+* **Tool Configuration Merging**: Merges system-wide rules templates in your home folder with workspace-specific configurations, ensuring instructions never duplicate.
+* **Automatic Snapshots & Crash Recovery**: Captures backups of the project state and maintains tracking sessions. Close-out triggers ensure logs are saved even if an agent process terminates unexpectedly.
+* **Git-Aware Context updates**: Inspects git branch history, latest commits, staged modifications, and untracked files to compile event trails.
+* **100% Local and Private**: Runs entirely on your machine. No cloud storage, no external LLM API calls, and no data leaves your local system.
 
-#### Option 1: Via Homebrew (Recommended)
+### Supported Tools
+* **Cursor** (`.cursorrules`)
+* **Claude Code** (`.clauderules`)
+* **Gemini CLI** (`.geminirules`)
+* **Aider** (`.aiderules`, `.aider.instructions.md`)
+* **Cline** (`.clinerules`)
+* **Windsurf** (`.windsurfrules`)
+* **Continue** (`.continuerules`)
+* **Supermaven** (`.supermavenrules`)
+* **Codeium** (`.codeiumrules`)
+* **Tabnine** (`.tabninerules`)
+
+---
+
+## Architecture
+
+Unimem separates execution concerns into clean, modular layers:
+
+```
+                  ┌───────────────────────────────────┐
+                  │             CLI Layer             │
+                  │   (init, summary, status, task)   │
+                  └─────────────────┬─────────────────┘
+                                    │
+                  ┌─────────────────▼─────────────────┐
+                  │            Core Engine            │
+                  │ (Git/File collection, Adapters)   │
+                  └─────────────────┬─────────────────┘
+                                    │
+         ┌──────────────────────────┼──────────────────────────┐
+         │                          │                          │
+┌────────▼────────┐        ┌────────▼────────┐        ┌────────▼────────┐
+│   Hooks Layer   │        │  Rules Engine   │        │  Memory Layer   │
+│ (Shell hooks:   │        │ (Merges home &  │        │ (Global storage │
+│  zsh/bash/fish) │        │  project rules) │        │  & symlinking)  │
+└─────────────────┘        └─────────────────┘        └─────────────────┘
+```
+
+### Storage Registry
+Unimem keeps your workspace roots clean by storing all database files in your home directory:
+`~/.unimem/projects/<project-id>/`
+
+Inside this folder, Unimem maintains:
+* `state.json`: The raw, structured project roadmap, tech stack, and file operations registry.
+* `memory.md`: The markdown representation of the project brain that AI tools consume.
+* `events/`: Historical stream of log updates.
+* `sessions/`: Log files detailing tool interaction durations.
+* `snapshots/`: Versioned state snapshots for historical rollbacks.
+* `decisions/`: Architecture design decision logs.
+
+A lightweight, local symlink `.unimem` is placed in the project root pointing to the global directory, giving workspace AI tools transparent access.
+
+---
+
+## Installation
+
+### Via Homebrew (Recommended)
+Because Homebrew shorthand taps assume a separate `homebrew-unimem` repository, and Unimem uses a single-repo structure, you must explicitly supply the URL to the main repository:
+
 ```bash
-brew tap korrakiran/unimem
+# 1. Tap the primary repository directly:
+brew tap korrakiran/unimem https://github.com/korrakiran/Unimem.git
+
+# 2. Install the package:
 brew install unimem
+
+# 3. Inject silent shell hooks:
+unimem shell install
+
+# 4. Activate the changes in your current terminal:
+source ~/.zshrc
+```
+
+### Via pipx
+```bash
+pipx install unimem
 unimem shell install
 source ~/.zshrc
 ```
 
-#### Option 2: Via pipx
-```bash
-pipx install unimem
-unimem shell install
-```
-
-### Windows (pipx)
-```bash
-pip install --user pipx
-pipx install unimem
-```
-
 ---
 
-## Commands Reference
+## Command Reference
 
 ### `unimem init`
-Initialize Unimem memory tracking in the current directory.
+Sets up project memory database inside the current directory.
 ```bash
-unimem init --name "My Project" --desc "An awesome app"
-```
-
-### `unimem summary`
-Rebuild the project state from event logs and print a concise, agent-formatted summary of what changed, important files, architecture, risks, and recommendations.
-```bash
-unimem summary
+unimem init --name "My project" --desc "A web application"
 ```
 
 ### `unimem status`
-Show the project name, tech stack, current goal, current task, git status, and recent events.
+Prints a formatted summary detailing the project goal, tasks progress, git state, and recent activity.
 ```bash
 unimem status
 ```
 
-### `unimem sync`
-Run auto-detection and trigger memory synchronization (used automatically by background shell hooks).
+### `unimem summary`
+Processes latest files log entries to update the central state database and outputs a concise markdown project brief for AI agents.
 ```bash
-unimem sync
+unimem summary
 ```
 
 ### `unimem task done`
-Complete the current task and promote the next planned task to current.
+Marks the current task as completed and promotes the next task in the queue.
 ```bash
-unimem task done --next "implement new feature"
+unimem task done --next "integrate auth modules"
+```
+
+### `unimem shell [install | uninstall]`
+Manages shell hooks setup in configuration profile scripts.
+```bash
+unimem shell install
 ```
 
 ### `unimem doctor`
-Run diagnostic health checks on your configuration, database files, and shell hooks.
+Runs environment diagnostics verifying path structures, configuration schemas, dependencies, and shell hook bindings.
 ```bash
 unimem doctor
 ```
 
 ### `unimem version`
-Print current version.
+Prints the active version string.
 ```bash
 unimem version
 ```
 
 ---
 
-## Global Configuration (`~/.unimem/config.json`)
+## Configuration
 
-Configure options globally:
+Customize Unimem behavior globally using `~/.unimem/config.json`:
+
 ```json
 {
   "auto_summary": true,
@@ -135,7 +176,7 @@ Configure options globally:
 
 ---
 
-## Troubleshooting
-
-### Background job outputs when executing `cd`
-If your terminal prints job numbers (e.g. `[1] 12345` or `done unimem summary`) when changing directories, make sure you run `unimem shell install` to install the updated v2 shell hooks, which use `setopt localoptions nomonitor` to run silent background tasks.
+## Security & Privacy
+* **No Telemetry**: Unimem is local-first. It does not collect analytics or report crash telemetry.
+* **No LLM Queries**: Summaries and mappings are generated using local heuristics and git/file diff parsers. No codebase content is ever sent to third-party APIs.
+* **Centralized Storage**: Keeps configuration data out of Git history by resolving files to `~/.unimem` rather than raw repository tracking.

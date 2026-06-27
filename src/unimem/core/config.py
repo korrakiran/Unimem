@@ -1,7 +1,6 @@
 """Configuration system for Unimem v2.0.0."""
 
 import json
-from pathlib import Path
 from pydantic import BaseModel, Field
 from unimem.utils.paths import get_config_path
 

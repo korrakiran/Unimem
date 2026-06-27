@@ -10,11 +10,11 @@ class Unimem < Formula
   include Language::Python::Virtualenv
 
   desc "Universal Project Memory Layer for AI Coding Agents"
-  homepage "https://github.com/korrakiran/unimem"
-  url "https://github.com/korrakiran/unimem/archive/refs/tags/v2.0.0.tar.gz"
-  sha256 "PLACEHOLDER_SHA256_FOR_V2.0.0"
+  homepage "https://github.com/korrakiran/Unimem"
+  url "https://github.com/korrakiran/Unimem/archive/refs/tags/v2.0.0.tar.gz"
+  sha256 "2c3d9bb758c90a47778495393499efe3d3950bae0611f4a5aac44038539fb365"
   license "MIT"
-  head "https://github.com/korrakiran/unimem.git", branch: "main"
+  head "https://github.com/korrakiran/Unimem.git", branch: "main"
 
   depends_on "python@3.12"
 
@@ -58,7 +58,7 @@ class Unimem < Formula
     sha256 "c40756b57adaa8b1efeeced5c196f3f3b7c435f90e84ea7f443901bec8099ef6"
   end
 
-  resource "pydantic_core" do
+  resource "pydantic-core" do
     url "https://files.pythonhosted.org/packages/19/95/6195171e385007300f0f5574592e467c568becce2d937a0b6804f218bc49/pydantic_core-2.46.4-cp312-cp312-macosx_11_0_arm64.whl"
     sha256 "962ccbab7b642487b1d8b7df90ef677e03134cf1fd8880bf698649b22a69371f"
   end
@@ -98,7 +98,7 @@ class Unimem < Formula
     sha256 "ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464"
   end
 
-  resource "typing_extensions" do
+  resource "typing-extensions" do
     url "https://files.pythonhosted.org/packages/72/94/1a15dd82efb362ac84269196e94cf00f187f7ed21c242792a923cdb1c61f/typing_extensions-4.15.0.tar.gz"
     sha256 "0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"
   end
@@ -110,19 +110,20 @@ class Unimem < Formula
 
   def install
     venv = virtualenv_create(libexec, "python3.12")
-    
+
     # Symlink the cached wheel to a valid wheel filename format so pip accepts it
     valid_wheel = buildpath/"pydantic_core-2.46.4-cp312-cp312-macosx_11_0_arm64.whl"
-    ln_s resource("pydantic_core").cached_download, valid_wheel
+    ln_s resource("pydantic-core").cached_download, valid_wheel
 
-    # Install pydantic_core from the symlinked wheel file to avoid Maturin build dependency
-    system Formula["python@3.12"].opt_bin/"python3.12", "-m", "pip", "--python", libexec/"bin/python", "install", "--no-deps", valid_wheel
-    
+    system formula_opt_bin("python@3.12")/"python3.12", "-m", "pip", "--python",
+           libexec/"bin/python", "install", "--no-deps", valid_wheel
+
     resources.each do |r|
-      next if r.name == "pydantic_core"
+      next if r.name == "pydantic-core"
+
       venv.pip_install r
     end
-    
+
     venv.pip_install_and_link buildpath
   end
 

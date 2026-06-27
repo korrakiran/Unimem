@@ -1,8 +1,6 @@
 """Rule Injection and Syncing Engine for Unimem v2.0.0."""
 
-import re
 from pathlib import Path
-from typing import List
 from unimem.utils.logger import logger
 
 SUPPORTED_RULE_FILES = [

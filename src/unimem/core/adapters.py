@@ -3,13 +3,12 @@
 import os
 import signal
 import subprocess
-import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Any, List, Type, Optional
 
 from unimem.memory.manager import MemoryManager
-from unimem.memory.schemas import Event, Session
+from unimem.memory.schemas import Event
 from unimem.core.git import GitCollector
 from unimem.core.file_collector import FileCollector
 from unimem.utils.logger import logger

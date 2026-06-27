@@ -1,9 +1,7 @@
 """Main CLI application entry point compiling all subcommands for Unimem v2.0.0."""
 
 import sys
-import os
 import subprocess
-from pathlib import Path
 from typing import Optional
 import typer
 from rich.console import Console
@@ -11,14 +9,14 @@ from rich.panel import Panel
 from rich.table import Table
 
 from unimem import __version__
-from unimem.core.config import load_config, save_config, Config
+from unimem.core.config import load_config
 from unimem.core.git import GitCollector
 from unimem.core.summarizer import generate_agent_summary
 from unimem.core.rules import sync_project_rules
-from unimem.memory.schemas import Event, ProjectState
 from unimem.memory.manager import MemoryManager
 from unimem.hooks.installer import install_hooks, uninstall_hooks, check_hooks
-from unimem.utils.paths import find_project_root, get_events_dir, get_config_path
+from unimem.utils.paths import find_project_root, get_config_path
+from unimem.utils.logger import logger
 
 app = typer.Typer(
     name="unimem",
@@ -257,8 +255,6 @@ def doctor_cmd():
         
     # 4. Dependency checks
     try:
-        import watchdog
-        import git
         table.add_row("Dependencies", "[green]OK[/green]", "watchdog and GitPython are successfully installed.")
     except Exception as e:
         table.add_row("Dependencies", "[red]ERROR[/red]", f"Missing dependencies: {e}")
@@ -367,7 +363,7 @@ def update_cmd():
     try:
         if is_brew:
             console.print("[green]Detected Homebrew installation. Upgrading via brew...[/green]")
-            cmd = ["brew", "upgrade", "korrakiran/unimem/unimem"]
+            cmd = ["brew", "upgrade", "unimem"]
         elif is_pipx:
             console.print("[green]Detected pipx installation. Upgrading via pipx...[/green]")
             cmd = ["pipx", "upgrade", "unimem"]

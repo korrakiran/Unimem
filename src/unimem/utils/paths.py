@@ -1,7 +1,6 @@
 """Path utilities for locating project root and global/project-specific memory directories."""
 
 import hashlib
-import os
 from pathlib import Path
 from typing import Optional
 

@@ -1,6 +1,5 @@
 """Snapshot manager for taking and restoring historical points of ProjectState."""
 
-import os
 from pathlib import Path
 from typing import List
 from unimem.memory.schemas import ProjectState

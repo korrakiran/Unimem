@@ -8,11 +8,10 @@ from unimem.memory.manager import MemoryManager
 from unimem.memory.schemas import Event
 from unimem.core.file_collector import FileCollector
 from unimem.utils.logger import logger
-from unimem.utils.timestamps import get_timestamp_str
 
 try:
     from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler, FileSystemEvent
+    from watchdog.events import FileSystemEventHandler
     HAS_WATCHDOG = True
 except ImportError:
     FileSystemEventHandler = object
